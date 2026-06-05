@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Open Mouse Tools"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Battery indicator for the Keychron M6 8K wireless mouse",
+        "Icon": "input-mouse",
+        "Id": "com.github.open-mouse-tools.keychronm6battery",
+        "License": "GPL-3.0-or-later",
+        "Name": "Keychron M6 Battery",
+        "Version": "0.1.0",
+        "Website": "https://github.com/open-mouse-tools/keychron-m6-battery-status"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

@@ -1,0 +1,80 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Historical artifact — NOT FUNCTIONAL with current hi-drawbridge (v0.1.0).
+# ──────────────────────────────────────────────────────────────────────────
+#
+# This file was the first attempt at adding M6 support to hi-drawbridge by
+# adapting the working M7 profile. It is intentionally preserved in the repo
+# as a record of the reverse-engineering journey, but it does NOT work — see
+# the post-mortem below before adapting it for any other Keychron M-series
+# device.
+#
+# WHY IT DOESN'T WORK
+#
+# hi-drawbridge's `feature_only` probe path expects:
+#   1. A wake report (output) sent to the configured `wake_endpoint`
+#      interface number.
+#   2. A feature report write (the "prime" command).
+#   3. A feature report read.
+#   4. A feature report write (the "battery query" command).
+#   5. A feature report read whose payload contains an `expected_signature`
+#      somewhere, with battery and status at fixed byte offsets.
+#
+# That matches the Keychron M7 protocol exactly. The M6, however:
+#
+#   • In USB-direct mode (PID 0xD049): exposes feature reports on a
+#     different vendor interface (usage page 0xFF0B, report IDs 0x14 / 0x2A
+#     / 0x2B), NOT report ID 0x51 (= decimal 81). The data layout is also
+#     different — battery is at offset 9 of report 0x2A, no prime/query
+#     dance is needed, and there's no `34 34 49 D0` signature in the
+#     response.
+#
+#   • In wireless mode (through the receiver, PID 0xD028): uses input
+#     reports (0xB6) that the receiver pushes spontaneously on state
+#     transitions. There's no command we found that forces a fresh push,
+#     so hi-drawbridge's request/response model doesn't fit. The current
+#     plasmoid handles this with a passive listener daemon (see
+#     `dev-scripts/keychron_m6_battery.py --listen`).
+#
+# WHAT'S BELOW
+#
+# The original M7-shaped attempt, with PIDs and signature swapped for the
+# M6. `hi-drawbridge probe-debug` against this file returns no candidates
+# because no M6 hidraw declares feature report ID 0x51.
+#
+# A real hi-drawbridge profile for the M6 would need a new probe path
+# entirely — feature reads without a prior write (for wired) plus a
+# passive-input mode (for wireless). Worth contributing upstream eventually.
+# ──────────────────────────────────────────────────────────────────────────
+
+id: keychron_m6
+name: Keychron M6
+vendor_id: "3434"
+transport_product_ids:
+  usb_direct: d049
+  receiver: d028
+
+device_type: mouse
+icon_name: input-mouse
+probe_path: feature_only
+
+wake_report_hex: 00b200000000000000000000000000000000000000000000000000000000000000
+
+query_report_id: 81
+prime_query_cmd: 7
+battery_query_cmd: 6
+query_length: 21
+expected_signature_hex: 343449d0
+battery_offset: 11
+status_offset: 12
+
+fallback_input_report_id: 84
+fallback_input_cmd: 228
+fallback_input_length: 21
+fallback_battery_offset: 2
+fallback_battery_bucket_max: 4
+charging_status_bytes: [1]
+
+query_endpoint:
+  required_feature_report_ids: [81]
+wake_endpoint:
+  interface_numbers: [3]

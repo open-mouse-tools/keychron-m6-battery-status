@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configuration keys for the Keychron M6 Battery plasmoid.
+     KConfig XT-formatted; values are exposed at runtime as
+     Plasmoid.configuration.<key>. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="pollIntervalSeconds" type="Int">
+            <label>How often to poll the battery (seconds).</label>
+            <default>300</default>
+            <min>10</min>
+            <max>3600</max>
+        </entry>
+        <entry name="hideWhenUnavailable" type="Bool">
+            <label>Hide the panel icon when the mouse is not connected.</label>
+            <default>false</default>
+        </entry>
+        <entry name="lowBatteryThreshold" type="Int">
+            <label>Battery percentage below which the icon is highlighted.</label>
+            <default>20</default>
+            <min>1</min>
+            <max>50</max>
+        </entry>
+    </group>
+</kcfg>

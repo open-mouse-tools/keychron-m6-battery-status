@@ -1,0 +1,32 @@
+# Keychron M6 wireless battery-status listener
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp packaging/systemd-user/keychron-m6-battery-listener.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now keychron-m6-battery-listener.service
+#
+# The service runs the Python script in --listen mode. It opens the receiver's
+# hidraw17 vendor interface and writes battery readings to:
+#   $XDG_RUNTIME_DIR/keychron_m6_state.json
+#
+# The receiver only pushes B6 E2 status frames on state changes (mouse
+# sleep/wake, battery % change), so the cache may take minutes to populate.
+# The plasmoid reads from this cache when no wired connection is available.
+
+[Unit]
+Description=Keychron M6 wireless battery listener
+Documentation=https://github.com/open-mouse-tools/keychron-m6-battery-status
+After=graphical-session.target
+
+[Service]
+Type=simple
+# Adjust this path if you installed the script elsewhere. The default points
+# to the version bundled with the plasmoid.
+ExecStart=/usr/bin/python3 %h/.local/share/plasma/plasmoids/com.github.open-mouse-tools.keychronm6battery/contents/scripts/keychron_m6_battery.py --listen
+Restart=on-failure
+RestartSec=5
+Nice=10
+
+[Install]
+WantedBy=default.target

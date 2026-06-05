@@ -1,0 +1,1 @@
+../../../dev-scripts/keychron_m6_battery.py
