@@ -10,6 +10,8 @@ All notable changes to this project will be documented here. Format roughly foll
 - `--version` flag, `--listen` / `--watch` / `--json` argument validation in the reader script.
 - ISO-format timestamps in `--verbose` listener logs.
 - Documentation: troubleshooting, verify-each-piece, uninstall sections in README; CHANGELOG.
+- `LICENSE` (canonical GPL-3.0 text).
+- Charging state: when the USB cable is connected, the compact panel view shows "Charging" instead of a percentage, the icon switches to a `battery-*-charging-symbolic` variant, and the expanded view shows "Charging" prominently with the percentage in smaller text underneath. The tooltip retains `Charging · NN%` so the level is still discoverable on hover.
 
 ### Changed
 - Reader script: stricter cache validation (rejects out-of-range `battery_percent`); atomic cache writes via `tempfile.mkstemp` + `fsync`; clearer error categorisation (`not_found`, `permission_denied`, `read_failed`, `no_cache`, `stale_cache`).

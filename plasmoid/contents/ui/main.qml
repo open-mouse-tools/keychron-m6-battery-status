@@ -27,6 +27,11 @@ PlasmoidItem {
     property string lastError: ""
     property string lastErrorCode: ""
 
+    // True when the cable is in: USB-direct mode implies the mouse is being
+    // powered / charged over the wire. The widget surfaces this as
+    // "Charging" rather than a percentage in the compact view.
+    readonly property bool isCharging: deviceAvailable && transport === "usb_direct"
+
     // ── Configuration (see contents/config/main.xml) ──────────────────────
     readonly property int pollIntervalMs: Plasmoid.configuration.pollIntervalSeconds * 1000
     readonly property int lowBatteryThreshold: Plasmoid.configuration.lowBatteryThreshold
@@ -53,6 +58,14 @@ PlasmoidItem {
     // ── Icon + tooltip in the panel ────────────────────────────────────────
     Plasmoid.icon: {
         if (!deviceAvailable) return "input-mouse-symbolic"
+        // Charging icons mirror the discharge tier so the icon still hints
+        // at the current level, but with the lightning-bolt overlay.
+        if (isCharging) {
+            if (batteryPercent < lowBatteryThreshold) return "battery-caution-charging-symbolic"
+            if (batteryPercent < 30) return "battery-low-charging-symbolic"
+            if (batteryPercent < 90) return "battery-good-charging-symbolic"
+            return "battery-full-charging-symbolic"
+        }
         if (batteryPercent < lowBatteryThreshold) return "battery-caution-symbolic"
         if (batteryPercent < 30) return "battery-low-symbolic"
         if (batteryPercent < 90) return "battery-good-symbolic"
@@ -65,10 +78,13 @@ PlasmoidItem {
             if (lastError !== "") return lastError
             return i18n("Not connected (plug in via USB cable, or run the wireless listener)")
         }
-        const transportLabel = transport === "usb_direct"
-            ? i18n("wired")
-            : transport === "wireless" ? i18n("wireless") : ""
         const ageLabel = formatAgeLabel(transport, wirelessAgeSeconds, lastUpdate)
+        if (isCharging) {
+            // Keep the percentage available on hover even though the panel
+            // says "Charging" — useful to know how close to full it is.
+            return i18n("Charging · %1%%2", batteryPercent, ageLabel)
+        }
+        const transportLabel = transport === "wireless" ? i18n("wireless") : ""
         return i18n("Battery: %1% (%2)%3", batteryPercent, transportLabel, ageLabel)
     }
 
@@ -89,7 +105,7 @@ PlasmoidItem {
     function statusLine() {
         if (lastError !== "") return lastError
         if (!deviceAvailable) return i18n("Plug in the M6 via USB cable to see live readings")
-        if (transport === "usb_direct") return i18n("Live · wired")
+        if (isCharging) return i18n("Charging · %1% · live", batteryPercent)
         if (transport === "wireless") {
             if (wirelessAgeSeconds < 0) return i18n("Wireless · cached")
             const mins = Math.floor(wirelessAgeSeconds / 60)
@@ -180,9 +196,16 @@ PlasmoidItem {
                 opacity: root.deviceAvailable ? 1.0 : 0.5
             }
             PlasmaComponents.Label {
-                text: root.deviceAvailable ? (root.batteryPercent + "%") : "—"
+                text: {
+                    if (!root.deviceAvailable) return "—"
+                    if (root.isCharging) return i18n("Charging")
+                    return root.batteryPercent + "%"
+                }
                 opacity: root.deviceAvailable ? 1.0 : 0.5
-                font.bold: root.deviceAvailable && root.batteryPercent < root.lowBatteryThreshold
+                // Bold the percentage when the battery is low — but don't bold
+                // "Charging" since the user already knows the cable is in.
+                font.bold: root.deviceAvailable && !root.isCharging
+                          && root.batteryPercent < root.lowBatteryThreshold
             }
         }
     }
@@ -211,14 +234,30 @@ PlasmoidItem {
             Layout.alignment: Qt.AlignHCenter
             font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.6
             font.bold: true
-            text: root.deviceAvailable ? (root.batteryPercent + "%")
-                                       : i18n("Not connected")
+            text: {
+                if (!root.deviceAvailable) return i18n("Not connected")
+                if (root.isCharging) return i18n("Charging")
+                return root.batteryPercent + "%"
+            }
             color: {
                 if (!root.deviceAvailable) return Kirigami.Theme.disabledTextColor
-                if (root.batteryPercent < root.lowBatteryThreshold)
+                // Don't show charging in the warning colour even if the value
+                // is below the threshold — it's actively being charged.
+                if (!root.isCharging && root.batteryPercent < root.lowBatteryThreshold)
                     return Kirigami.Theme.negativeTextColor
                 return Kirigami.Theme.textColor
             }
+        }
+
+        // Smaller line under the big "Charging" / "N%" — shows the
+        // percentage in tiny text while charging so the user can still see
+        // how full the battery is.
+        PlasmaComponents.Label {
+            Layout.alignment: Qt.AlignHCenter
+            visible: root.isCharging
+            text: root.batteryPercent + "%"
+            opacity: 0.7
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.1
         }
 
         PlasmaComponents.Label {
